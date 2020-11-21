@@ -21,12 +21,14 @@
 #   it can be further developed with Alpha-Beta pruning. See other module for
 #   this implementation.
 #
+#   Suggestion: Put breakpoint in "minimaxer"-method and step through to understand
+#   how the algorithm works.
+#
 
 """
-
 import logging
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s %(levelname)s=> %(message)s')
-logging.disable(logging.CRITICAL)
+logging.disable(logging.DEBUG)
 
 __author__ = "Helge Modén, www.github.com/helgemod"
 __copyright__ = "Copyright 2020, Helge Modén"
@@ -98,12 +100,7 @@ class MinMaxAlgo:
         myMove = self.minimax(self.DEPTH,maximizingPlayer)
         return myMove[self.KEY_BESTMOVE]
 
-    def minimax(self,depth,maximizingPlayer,loggingNodeName=None):
-        if loggingNodeName == None:
-            loggingNodeName = "ROOT NODE"
-
-        logging.debug(" "*(self.DEPTH - depth)+loggingNodeName)
-
+    def minimax(self,depth,maximizingPlayer):
         if maximizingPlayer:
             moveList = self.getListOfPossibleMovesAsMaximizer_callback()
         else:
@@ -120,11 +117,8 @@ class MinMaxAlgo:
                 #Try a move
                 self.maximizerMoveFunc_callback(move)
 
-                #For logging
-                nn = loggingNodeName+"("+str(move)+")"
-
                 # RECUR
-                evalResult = self.minimax(depth-1, False, nn)
+                evalResult = self.minimax(depth-1, False)
 
                 #Remove token before next loop
                 self.maximizerUndoMoveFunc_callback(move)
@@ -143,11 +137,8 @@ class MinMaxAlgo:
                 # Try a move
                 self.minimizerMoveFunc_callback(move)
 
-                # For logging
-                nn = loggingNodeName + "(" + str(move) + ")"
-
                 # RECUR
-                evalResult = self.minimax(depth - 1, True, nn)
+                evalResult = self.minimax(depth - 1, True)
 
                 # Remove token before next loop
                 self.minimizerUndoMoveFunc_callback(move)
@@ -157,6 +148,8 @@ class MinMaxAlgo:
                     evalMinResult[self.KEY_EVAL] = evalResult[self.KEY_EVAL]
                     evalMinResult[self.KEY_BESTMOVE] = move
             return evalMinResult
+
+
 
 if __name__ == '__main__':
     print("MinMaxAlgo run from a commandprompt. Not yet implemented.")
