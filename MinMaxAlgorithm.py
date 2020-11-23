@@ -27,7 +27,8 @@
 
 """
 import logging
-logging.basicConfig(level=logging.DEBUG, format='%(asctime)s %(levelname)s=> %(message)s')
+#logging.basicConfig(level=logging.DEBUG, format='%(asctime)s %(levelname)s=> %(message)s')
+logging.basicConfig(filename="MinMaxLog.txt",filemode='w+',level=logging.DEBUG, format='%(levelname)s=> %(message)s')
 logging.disable(logging.DEBUG)
 
 __author__ = "Helge Modén, www.github.com/helgemod"
@@ -40,9 +41,14 @@ __email__ = "helgemod@gmail.com"
 __status__ = "https://github.com/helgemod/MinMaxAlgorithm"
 __date__ = "2020-11-20"
 
+MINMAX_ALGO = 1
+MINMAXALPHABETAPRUNING_ALGO = 2
+MINMAX_ALGO_WITH_LOGGING = -1
 
+KEY_EVAL = "MinMaxAlgo_keyEval"
+KEY_BESTMOVE = "MinMaxAlgo_keyBestMove"
 
-class MinMaxAlgo:
+class GameAlgo:
 
     """
     Explanation of callback functions.
@@ -61,57 +67,50 @@ class MinMaxAlgo:
 
     """
 
-    evalFunc_callback=None
-    maximizerMoveFunc_callback = None
-    minimizerMoveFunc_callback = None
-    maximizerUndoMoveFunc_callback = None
-    minimizerUndoMoveFunc_callback = None
-    getListOfPossibleMovesAsMaximizer_callback = None
-    getListOfPossibleMovesAsMinimizer_callback = None
+    def __init__(self, evalFunc_callback,
+                 maximizerMoveFunc_callback,
+                 minimizerMoveFunc_callback,
+                 maximizerUndoMoveFunc_callback,
+                 minimizerUndoMoveFunc_callback,
+                 getListOfPossibleMovesAsMaximizer_callback,
+                 getListOfPossibleMovesAsMinimizer_callback,
+                 minEval=-100, maxEval=100, depth=6):
 
-    MIN_EVAL = -100
-    MAX_EVAL = 100
-
-    DEPTH = 2
-
-    KEY_EVAL = "MinMaxAlgo_keyEval"
-    KEY_BESTMOVE = "MinMaxAlgo_keyBestMove"
-
-    def __init__(self, evalFunc_callback, \
-                 maximizerMoveFunc_callback,\
-                 minimizerMoveFunc_callback, \
-                 maximizerUndoMoveFunc_callback, \
-                 minimizerUndoMoveFunc_callback, \
-                 getListOfPossibleMovesAsMaximizer_callback,\
-                 getListOfPossibleMovesAsMinimizer_callback, \
-                 minEval, maxEval):
-
-        self.evalFunc_callback=evalFunc_callback
+        self.evalFunc_callback = evalFunc_callback
         self.maximizerMoveFunc_callback = maximizerMoveFunc_callback
         self.minimizerMoveFunc_callback = minimizerMoveFunc_callback
         self.maximizerUndoMoveFunc_callback = maximizerUndoMoveFunc_callback
         self.minimizerUndoMoveFunc_callback = minimizerUndoMoveFunc_callback
         self.getListOfPossibleMovesAsMaximizer_callback = getListOfPossibleMovesAsMaximizer_callback
         self.getListOfPossibleMovesAsMinimizer_callback = getListOfPossibleMovesAsMinimizer_callback
-        self.MIN_EVAL=minEval
-        self.MAX_EVAL=maxEval
+        self.MIN_EVAL = minEval
+        self.MAX_EVAL = maxEval
+        self.DEPTH = depth
 
-    def calculateMove(self,maximizingPlayer):
-        myMove = self.minimax(self.DEPTH,maximizingPlayer)
-        return myMove[self.KEY_BESTMOVE]
+    def calculateMove(self, whichAlgo, maximizingPlayer):
+        if whichAlgo == MINMAX_ALGO:
+            myMove = self.minimax(self.DEPTH, maximizingPlayer)
+        elif whichAlgo == MINMAXALPHABETAPRUNING_ALGO:
+            myMove = self.minMaxAlphaBetaPruning(self.DEPTH, maximizingPlayer, self.MIN_EVAL, self.MAX_EVAL)
+        elif whichAlgo == MINMAX_ALGO_WITH_LOGGING:
+            myMove = self.minimaxWithLogging(self.DEPTH, maximizingPlayer)
+        else:
+            myMove = self.minimax(self.DEPTH, maximizingPlayer)
+        return myMove[KEY_BESTMOVE]
 
-    def minimax(self,depth,maximizingPlayer):
+    #This code is clean school book example
+    def minimax(self, depth, maximizingPlayer):
         if maximizingPlayer:
             moveList = self.getListOfPossibleMovesAsMaximizer_callback()
         else:
             moveList = self.getListOfPossibleMovesAsMinimizer_callback()
 
-        if depth==0 or len(moveList)==0:
+        if depth == 0 or len(moveList) == 0:
             bottomEval = self.evalFunc_callback()
-            return {self.KEY_EVAL:bottomEval, self.KEY_BESTMOVE:None}
+            return {KEY_EVAL: bottomEval, KEY_BESTMOVE: None}
 
         if maximizingPlayer:
-            evalMaxResult = {self.KEY_EVAL:self.MIN_EVAL,self.KEY_BESTMOVE:None}
+            evalMaxResult = {KEY_EVAL: self.MIN_EVAL, KEY_BESTMOVE: None}
             for move in moveList:
 
                 #Try a move
@@ -124,14 +123,14 @@ class MinMaxAlgo:
                 self.maximizerUndoMoveFunc_callback(move)
 
                 # Is this move better?
-                if evalResult[self.KEY_EVAL] > evalMaxResult[self.KEY_EVAL]:
-                    evalMaxResult[self.KEY_EVAL] = evalResult[self.KEY_EVAL]
-                    evalMaxResult[self.KEY_BESTMOVE] = move
+                if evalResult[KEY_EVAL] > evalMaxResult[KEY_EVAL]:
+                    evalMaxResult[KEY_EVAL] = evalResult[KEY_EVAL]
+                    evalMaxResult[KEY_BESTMOVE] = move
             return evalMaxResult
 
         #Minimizer
         else:
-            evalMinResult = {self.KEY_EVAL:self.MAX_EVAL,self.KEY_BESTMOVE:None}
+            evalMinResult = {KEY_EVAL: self.MAX_EVAL, KEY_BESTMOVE: None}
             for move in moveList:
 
                 # Try a move
@@ -144,11 +143,156 @@ class MinMaxAlgo:
                 self.minimizerUndoMoveFunc_callback(move)
 
                 # Is this move better?
-                if evalResult[self.KEY_EVAL] < evalMinResult[self.KEY_EVAL]:
-                    evalMinResult[self.KEY_EVAL] = evalResult[self.KEY_EVAL]
-                    evalMinResult[self.KEY_BESTMOVE] = move
+                if evalResult[KEY_EVAL] < evalMinResult[KEY_EVAL]:
+                    evalMinResult[KEY_EVAL] = evalResult[KEY_EVAL]
+                    evalMinResult[KEY_BESTMOVE] = move
             return evalMinResult
 
+    #This code is with logging for better understanding while analyzing
+    #afterward.
+    def minimaxWithLogging(self, depth, maximizingPlayer,nn=None):
+        maxMinInfo = "(MAX)"
+        ident = 3
+        if not maximizingPlayer:
+            maxMinInfo = "(MIN)"
+        if nn == None:
+            nn = "ROOT"
+
+        if maximizingPlayer:
+            moveList = self.getListOfPossibleMovesAsMaximizer_callback()
+        else:
+            moveList = self.getListOfPossibleMovesAsMinimizer_callback()
+
+        if depth == 0 or len(moveList) == 0:
+            bottomEval = self.evalFunc_callback()
+            logging.info("-" *((self.DEPTH-depth)*ident) + maxMinInfo + nn+" ***BOTTOM*** Evaluated to:"+str(bottomEval))
+            return {KEY_EVAL: bottomEval, KEY_BESTMOVE: None}
+
+        logging.info("-" * ((self.DEPTH - depth) * ident) + maxMinInfo + nn)
+
+        if maximizingPlayer:
+            evalMaxResult = {KEY_EVAL: self.MIN_EVAL, KEY_BESTMOVE: None}
+            for move in moveList:
+
+                #Try a move
+                self.maximizerMoveFunc_callback(move)
+
+                # RECUR
+                evalResult = self.minimaxWithLogging(depth-1, False, nn+"/"+str(move))
+
+                #Remove token before next loop
+                self.maximizerUndoMoveFunc_callback(move)
+
+                # Is this move better?
+                if evalResult[KEY_EVAL] > evalMaxResult[KEY_EVAL]:
+                    evalMaxResult[KEY_EVAL] = evalResult[KEY_EVAL]
+                    evalMaxResult[KEY_BESTMOVE] = move
+                    logging.info("-" * ((self.DEPTH - depth) * ident) + maxMinInfo + nn + " ...better move:"+str(move))
+            logging.info("-" * ((self.DEPTH - depth) * ident) + maxMinInfo + nn + " *BEST MOVE:" + str(evalMaxResult[KEY_BESTMOVE]))
+            return evalMaxResult
+
+        #Minimizer
+        else:
+            evalMinResult = {KEY_EVAL: self.MAX_EVAL, KEY_BESTMOVE: None}
+            for move in moveList:
+
+                # Try a move
+                self.minimizerMoveFunc_callback(move)
+
+                # RECUR
+                evalResult = self.minimaxWithLogging(depth - 1, True, nn+"/"+str(move))
+
+                # Remove token before next loop
+                self.minimizerUndoMoveFunc_callback(move)
+
+                # Is this move better?
+                if evalResult[KEY_EVAL] < evalMinResult[KEY_EVAL]:
+                    evalMinResult[KEY_EVAL] = evalResult[KEY_EVAL]
+                    evalMinResult[KEY_BESTMOVE] = move
+                    logging.info("-" * ((self.DEPTH - depth) * ident) + maxMinInfo + nn + " ...better move:" + str(move))
+            logging.info("-" * ((self.DEPTH - depth) * ident) + maxMinInfo + nn + " *BEST MOVE:" + str(evalMinResult[KEY_BESTMOVE]))
+            return evalMinResult
+
+    def minMaxAlphaBetaPruning(self, depth, maximizingPlayer, alpha, beta):
+        if depth == 0:
+            #We're at the bottom node! Evaluate this node and return it up the tree.
+            bottomEval = self.evalFunc_callback()
+            return {KEY_EVAL: bottomEval, KEY_BESTMOVE: None}
+
+        #Don't need to read out list if depth == 0!!
+        if maximizingPlayer:
+            moveList = self.getListOfPossibleMovesAsMaximizer_callback()
+        else:
+            moveList = self.getListOfPossibleMovesAsMinimizer_callback()
+
+        if len(moveList) == 0:
+            #I can't do any moves! (Probably board is full, if Tic Tac Toe.) Eval and call up.
+            bottomEval = self.evalFunc_callback()
+            return {KEY_EVAL: bottomEval, KEY_BESTMOVE: None}
+
+        if maximizingPlayer:
+            evalMaxResult = {KEY_EVAL: self.MIN_EVAL, KEY_BESTMOVE: moveList[0]}
+            for move in moveList:
+
+                #Try a move
+                self.maximizerMoveFunc_callback(move)
+
+                # RECUR
+                evalResult = self.minMaxAlphaBetaPruning(depth-1, False, alpha, beta)
+
+                #Remove token before next loop
+                self.maximizerUndoMoveFunc_callback(move)
+
+                # Is this move better?
+                if evalResult[KEY_EVAL] > evalMaxResult[KEY_EVAL]:
+                    evalMaxResult[KEY_EVAL] = evalResult[KEY_EVAL]
+                    evalMaxResult[KEY_BESTMOVE] = move
+
+                #Is this move the best I know so far?
+                if evalMaxResult[KEY_EVAL] > alpha:
+                    alpha = evalMaxResult[KEY_EVAL]
+
+                # Minimizer above me knows he can achieve "beta".
+                # "alpha" is what I as maximizer AT LEAST will
+                # throw back up at him. So, if minimizer above
+                # me has found a better move (beta<=alpha), he will NOT pick
+                # this branch anyway. So stop investigating further!
+                if beta <= alpha:
+                    break
+
+            return evalMaxResult
+
+        #Minimizer
+        else:
+            evalMinResult = {KEY_EVAL: self.MAX_EVAL, KEY_BESTMOVE: moveList[0]}
+            for move in moveList:
+
+                # Try a move
+                self.minimizerMoveFunc_callback(move)
+
+                # RECUR
+                evalResult = self.minMaxAlphaBetaPruning(depth - 1, True, alpha, beta)
+
+                # Remove token before next loop
+                self.minimizerUndoMoveFunc_callback(move)
+
+                # Is this move better?
+                if evalResult[KEY_EVAL] < evalMinResult[KEY_EVAL]:
+                    evalMinResult[KEY_EVAL] = evalResult[KEY_EVAL]
+                    evalMinResult[KEY_BESTMOVE] = move
+
+                if evalMinResult[KEY_EVAL] < beta:
+                    beta = evalMinResult[KEY_EVAL]
+
+                # Maximizer above me knows he can achieve "alpha".
+                # "beta" is what I as minimizer AT LEAST will
+                # throw back up at him. So, if maximizer above
+                # me has found a better move (beta<=alpha), he will NOT pick
+                # this branch anyway. So stop investigating further!
+                if beta <= alpha:
+                    break
+
+            return evalMinResult
 
 
 if __name__ == '__main__':
