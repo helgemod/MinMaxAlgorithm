@@ -87,13 +87,13 @@ class GameAlgo:
         self.MAX_EVAL = maxEval
         self.DEPTH = depth
 
-    def calculateMove(self, whichAlgo, maximizingPlayer):
+    def calculateMove(self, whichAlgo, maximizingPlayer, depth):
         if whichAlgo == MINMAX_ALGO:
-            myMove = self.minimax(self.DEPTH, maximizingPlayer)
+            myMove = self.minimax(depth, maximizingPlayer)
         elif whichAlgo == MINMAXALPHABETAPRUNING_ALGO:
-            myMove = self.minMaxAlphaBetaPruning(self.DEPTH, maximizingPlayer, self.MIN_EVAL, self.MAX_EVAL)
+            myMove = self.minMaxAlphaBetaPruning(depth, maximizingPlayer, self.MIN_EVAL, self.MAX_EVAL)
         elif whichAlgo == MINMAX_ALGO_WITH_LOGGING:
-            myMove = self.minimaxWithLogging(self.DEPTH, maximizingPlayer)
+            myMove = self.minimaxWithLogging(depth, maximizingPlayer)
         else:
             myMove = self.minimax(self.DEPTH, maximizingPlayer)
         return myMove[KEY_BESTMOVE]
