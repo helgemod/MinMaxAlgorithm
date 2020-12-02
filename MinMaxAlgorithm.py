@@ -227,20 +227,14 @@ class GameAlgo:
             moveList = self.getListOfPossibleMovesAsMaximizer_callback()
         else:
             moveList = self.getListOfPossibleMovesAsMinimizer_callback()
-        #print(str(nn)+": "+str(moveList))
+
         if len(moveList) == 0:
-            #I can't do any moves! (Probably board is full, if Tic Tac Toe.) Eval and call up.
             bottomEval = self.evalFunc_callback()
-            #print("Eval, due to no movelist:",bottomEval, nn)
             return {KEY_EVAL: bottomEval, KEY_BESTMOVE: None}
 
         if maximizingPlayer:
             evalMaxResult = {KEY_EVAL: self.MIN_EVAL, KEY_BESTMOVE: moveList[0]}
             for move in moveList:
-
-                if nn == "R ":
-                    pass
-                    #print("Trying move",move)
 
                 #Try a move
                 self.maximizerMoveFunc_callback(move)
@@ -266,7 +260,6 @@ class GameAlgo:
                 # me has found a better move (beta<=alpha), he will NOT pick
                 # this branch anyway. So stop investigating further!
                 if beta <= alpha:
-                    #print("MAX> PRUNE:",nn)
                     break
 
             return evalMaxResult
@@ -275,17 +268,11 @@ class GameAlgo:
         else:
             evalMinResult = {KEY_EVAL: self.MAX_EVAL, KEY_BESTMOVE: moveList[0]}
             for move in moveList:
-                if nn == "R ":
-                    pass
-                    #print("Trying move", move)
                 # Try a move
                 self.minimizerMoveFunc_callback(move)
 
                 # RECUR
                 evalResult = self.minMaxAlphaBetaPruning(depth - 1, True, alpha, beta, nn+str(move))
-
-                if nn == "R " and evalResult == 1000:
-                    print("Forced win for X if I draw: ",move)
 
                 # Remove token before next loop
                 self.minimizerUndoMoveFunc_callback(move)
@@ -294,16 +281,10 @@ class GameAlgo:
                 if evalResult[KEY_EVAL] < evalMinResult[KEY_EVAL]:
                     evalMinResult[KEY_EVAL] = evalResult[KEY_EVAL]
                     evalMinResult[KEY_BESTMOVE] = move
-                    if nn == "R ":
-                        pass
-                        #print("Best move for O so far:", evalMinResult[KEY_BESTMOVE], evalMinResult[KEY_EVAL])
 
                 if evalMinResult[KEY_EVAL] < beta:
                     evalMinResult[KEY_EVAL] = evalResult[KEY_EVAL]
                     beta = evalMinResult[KEY_EVAL]
-                    if nn == "R ":
-                        pass
-                        #print("...also updating beta to:", beta)
 
                 # Maximizer above me knows he can achieve "alpha".
                 # "beta" is what I as minimizer AT LEAST will
@@ -311,9 +292,6 @@ class GameAlgo:
                 # me has found a better move (beta<=alpha), he will NOT pick
                 # this branch anyway. So stop investigating further!
                 if beta <= alpha:
-                    if nn == "R ":
-                        print("...PRUNE! Got better moves to make!:")
-                    #print("MIN> PRUNE:", nn)
                     break
 
             return evalMinResult
