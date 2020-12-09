@@ -44,10 +44,12 @@ __date__ = "2020-11-20"
 
 MINMAX_ALGO = 1
 MINMAXALPHABETAPRUNING_ALGO = 2
+MINMAXALPHABETAPRUNINGWITHHISTORY_ALGO = 3
 MINMAX_ALGO_WITH_LOGGING = -1
 
 KEY_EVAL = "MinMaxAlgo_keyEval"
 KEY_BESTMOVE = "MinMaxAlgo_keyBestMove"
+KEY_HISTORY = "MinMaxAlgo_keyHistory"
 
 class GameAlgo:
 
@@ -88,7 +90,14 @@ class GameAlgo:
         self.MAX_EVAL = maxEval
         self.DEPTH = depth
 
+        self.onGoingAnalyze = False
+        self.interruptFlag = False
+
+    def interruptAnalyze(self):
+        self.interruptFlag = True
+
     def calculateMove(self, whichAlgo, maximizingPlayer, depth):
+        self.interruptFlag = False
         if whichAlgo == MINMAX_ALGO:
             myMove = self.minimax(depth, maximizingPlayer)
         elif whichAlgo == MINMAXALPHABETAPRUNING_ALGO:
@@ -98,6 +107,11 @@ class GameAlgo:
         else:
             myMove = self.minimax(self.DEPTH, maximizingPlayer)
         return myMove[KEY_BESTMOVE]
+
+    def calculateMoveWithHistory(self, whichAlgo, maximizingPlayer, depth):
+        if whichAlgo == MINMAXALPHABETAPRUNINGWITHHISTORY_ALGO:
+            myMove = self.minMaxAlphaBetaPruningWithHistory(depth, maximizingPlayer, self.MIN_EVAL, self.MAX_EVAL)
+        return myMove
 
     #This code is clean school book example
     def minimax(self, depth, maximizingPlayer):
@@ -175,6 +189,10 @@ class GameAlgo:
             evalMaxResult = {KEY_EVAL: self.MIN_EVAL, KEY_BESTMOVE: None}
             for move in moveList:
 
+                if self.interruptFlag:
+                    print("Interrupt minmax")
+                    break
+
                 #Try a move
                 self.maximizerMoveFunc_callback(move)
 
@@ -196,6 +214,10 @@ class GameAlgo:
         else:
             evalMinResult = {KEY_EVAL: self.MAX_EVAL, KEY_BESTMOVE: None}
             for move in moveList:
+
+                if self.interruptFlag:
+                    print("Interrupt minmax")
+                    break
 
                 # Try a move
                 self.minimizerMoveFunc_callback(move)
@@ -236,6 +258,10 @@ class GameAlgo:
             evalMaxResult = {KEY_EVAL: self.MIN_EVAL, KEY_BESTMOVE: moveList[0]}
             for move in moveList:
 
+                if self.interruptFlag:
+                    print("Interrupt minmax")
+                    break
+
                 #Try a move
                 self.maximizerMoveFunc_callback(move)
 
@@ -268,6 +294,11 @@ class GameAlgo:
         else:
             evalMinResult = {KEY_EVAL: self.MAX_EVAL, KEY_BESTMOVE: moveList[0]}
             for move in moveList:
+
+                if self.interruptFlag:
+                    print("Interrupt minmax")
+                    break
+
                 # Try a move
                 self.minimizerMoveFunc_callback(move)
 
@@ -281,6 +312,130 @@ class GameAlgo:
                 if evalResult[KEY_EVAL] < evalMinResult[KEY_EVAL]:
                     evalMinResult[KEY_EVAL] = evalResult[KEY_EVAL]
                     evalMinResult[KEY_BESTMOVE] = move
+
+                if evalMinResult[KEY_EVAL] < beta:
+                    evalMinResult[KEY_EVAL] = evalResult[KEY_EVAL]
+                    beta = evalMinResult[KEY_EVAL]
+
+                # Maximizer above me knows he can achieve "alpha".
+                # "beta" is what I as minimizer AT LEAST will
+                # throw back up at him. So, if maximizer above
+                # me has found a better move (beta<=alpha), he will NOT pick
+                # this branch anyway. So stop investigating further!
+                if beta <= alpha:
+                    break
+
+            return evalMinResult
+
+    def minMaxAlphaBetaPruningWithHistory(self, depth, maximizingPlayer, alpha, beta, history=None):
+        if history is None:
+            historyToThisNode = [] # This is the root node.
+        else:
+            historyToThisNode = history
+
+        if depth == 0:
+            #We're at the bottom node! Evaluate this node and return it up the tree.
+            bottomEval = self.evalFunc_callback()
+            retDict = {KEY_EVAL: bottomEval, KEY_BESTMOVE: None, KEY_HISTORY: historyToThisNode}
+            #print("-" * ((self.DEPTH - depth) * 1), end=' ')
+            #print(f"{historyToThisNode}> *** EVAL (bottom) *** {retDict}")
+            return {KEY_EVAL: bottomEval, KEY_BESTMOVE: None, KEY_HISTORY: historyToThisNode}
+
+        #Don't need to read out list if depth == 0!!
+        if maximizingPlayer:
+            moveList = self.getListOfPossibleMovesAsMaximizer_callback()
+        else:
+            moveList = self.getListOfPossibleMovesAsMinimizer_callback()
+
+        if len(moveList) == 0:
+            bottomEval = self.evalFunc_callback()
+            retDict = {KEY_EVAL: bottomEval, KEY_BESTMOVE: None, KEY_HISTORY: historyToThisNode}
+            #print("-" *((self.DEPTH-depth)*1), end=' ')
+            #print(f"{historyToThisNode}> *** EVAL (Win) *** Found win: I will resturn", retDict)
+            return {KEY_EVAL: bottomEval, KEY_BESTMOVE: None, KEY_HISTORY: historyToThisNode}
+
+        if maximizingPlayer:
+            evalMaxResult = {KEY_EVAL: self.MIN_EVAL-1, KEY_BESTMOVE: moveList[0], KEY_HISTORY: historyToThisNode}
+            for move in moveList:
+
+                if self.interruptFlag:
+                    print("Interrupt minmax")
+                    break
+
+                #Try a move
+                self.maximizerMoveFunc_callback(move)
+
+                historyToThisNode.append(move)
+
+                # RECUR
+                evalResult = self.minMaxAlphaBetaPruningWithHistory(depth-1, False, alpha, beta, historyToThisNode.copy())
+
+                del historyToThisNode[-1]
+
+                #print("-" *((self.DEPTH-depth)*1), end=' ')
+                #print(f"{historyToThisNode}X> Got eval Result", evalResult)
+
+                #Remove token before next loop
+                self.maximizerUndoMoveFunc_callback(move)
+
+                # Is this move better?
+                #print("-" * ((self.DEPTH - depth) * 1), end=' ')
+                #print(f"{historyToThisNode}X>Is {evalResult[KEY_EVAL]} > {evalMaxResult[KEY_EVAL]} (max so far)")
+                if evalResult[KEY_EVAL] > evalMaxResult[KEY_EVAL]:
+                    evalMaxResult[KEY_EVAL] = evalResult[KEY_EVAL]
+                    evalMaxResult[KEY_BESTMOVE] = move
+                    evalMaxResult[KEY_HISTORY] = evalResult[KEY_HISTORY]
+                    #print("-" * (self.DEPTH - depth), end=' ')
+                    #print(f"{historyToThisNode}X>     YES! Updating best move to {evalMaxResult}")
+
+
+                #Is this move the best I know so far?
+                if evalMaxResult[KEY_EVAL] > alpha:
+                    alpha = evalMaxResult[KEY_EVAL]
+
+                # Minimizer above me knows he can achieve "beta".
+                # "alpha" is what I as maximizer AT LEAST will
+                # throw back up at him. So, if minimizer above
+                # me has found a better move (beta<=alpha), he will NOT pick
+                # this branch anyway. So stop investigating further!
+                if beta <= alpha:
+                    #print("-" * (self.DEPTH - depth), end=' ')
+                    #print(f"{historyToThisNode}X> PRUNE!!")
+                    break
+
+            #print("-" * (self.DEPTH - depth), end=' ')
+            #print(f"{historyToThisNode}X>Thats it! Here is what I will return! {evalMaxResult}")
+            return evalMaxResult
+
+        #Minimizer
+        else:
+            evalMinResult = {KEY_EVAL: self.MAX_EVAL+1, KEY_BESTMOVE: moveList[0], KEY_HISTORY: historyToThisNode}
+            for move in moveList:
+
+                if self.interruptFlag:
+                    print("Interrupt minmax")
+                    break
+
+                # Try a move
+                self.minimizerMoveFunc_callback(move)
+
+                historyToThisNode.append(move)
+
+                # RECUR
+                evalResult = self.minMaxAlphaBetaPruningWithHistory(depth - 1, True, alpha, beta, historyToThisNode.copy())
+
+                del historyToThisNode[-1]
+
+                # Remove token before next loop
+                self.minimizerUndoMoveFunc_callback(move)
+
+                # Is this move better?
+                if evalResult[KEY_EVAL] < evalMinResult[KEY_EVAL]:
+                    evalMinResult[KEY_EVAL] = evalResult[KEY_EVAL]
+                    evalMinResult[KEY_BESTMOVE] = move
+                    evalMinResult[KEY_HISTORY] = evalResult[KEY_HISTORY]
+                    #print("-" * (self.DEPTH - depth), end=' ')
+                    #print(f"{historyToThisNode}O>     YES! Updating best move to {evalMinResult}")
 
                 if evalMinResult[KEY_EVAL] < beta:
                     evalMinResult[KEY_EVAL] = evalResult[KEY_EVAL]
