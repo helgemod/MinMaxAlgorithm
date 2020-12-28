@@ -1,7 +1,7 @@
 from setuptools import setup
 
 setup(name='MinMaxAlgorithm',
-      version='0.1',
+      version='1.0.1',
       description='Python implementation of MinMax algorithm.',
       url='http://www.github.com/MinMaxAlgorithm',
       author='Helge Modén',

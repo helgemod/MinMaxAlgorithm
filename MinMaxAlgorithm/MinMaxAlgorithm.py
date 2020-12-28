@@ -191,7 +191,6 @@ class GameAlgo:
             for move in moveList:
 
                 if self.interruptFlag:
-                    print("Interrupt minmax")
                     break
 
                 #Try a move
@@ -217,7 +216,6 @@ class GameAlgo:
             for move in moveList:
 
                 if self.interruptFlag:
-                    print("Interrupt minmax")
                     break
 
                 # Try a move
@@ -260,7 +258,6 @@ class GameAlgo:
             for move in moveList:
 
                 if self.interruptFlag:
-                    print("Interrupt minmax")
                     break
 
                 #Try a move
