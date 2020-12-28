@@ -1,3 +1,3 @@
 # MinMaxAlgorithm
-Python implementation of MinMax algorithm based on "StrideDimensions"-module.
-https://github.com/helgemod/StrideDimensions
+Python implementation of MinMax algorithm.
+https://github.com/helgemod/MinMaxAlgorithm

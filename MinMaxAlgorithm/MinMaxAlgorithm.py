@@ -109,6 +109,7 @@ class GameAlgo:
         return myMove[KEY_BESTMOVE]
 
     def calculateMoveWithHistory(self, whichAlgo, maximizingPlayer, depth):
+        myMove = None
         if whichAlgo == MINMAXALPHABETAPRUNINGWITHHISTORY_ALGO:
             myMove = self.minMaxAlphaBetaPruningWithHistory(depth, maximizingPlayer, self.MIN_EVAL, self.MAX_EVAL)
         return myMove
@@ -190,7 +191,6 @@ class GameAlgo:
             for move in moveList:
 
                 if self.interruptFlag:
-                    print("Interrupt minmax")
                     break
 
                 #Try a move
@@ -216,7 +216,6 @@ class GameAlgo:
             for move in moveList:
 
                 if self.interruptFlag:
-                    print("Interrupt minmax")
                     break
 
                 # Try a move
@@ -259,7 +258,6 @@ class GameAlgo:
             for move in moveList:
 
                 if self.interruptFlag:
-                    print("Interrupt minmax")
                     break
 
                 #Try a move
@@ -337,8 +335,6 @@ class GameAlgo:
             #We're at the bottom node! Evaluate this node and return it up the tree.
             bottomEval = self.evalFunc_callback()
             retDict = {KEY_EVAL: bottomEval, KEY_BESTMOVE: None, KEY_HISTORY: historyToThisNode}
-            #print("-" * ((self.DEPTH - depth) * 1), end=' ')
-            #print(f"{historyToThisNode}> *** EVAL (bottom) *** {retDict}")
             return {KEY_EVAL: bottomEval, KEY_BESTMOVE: None, KEY_HISTORY: historyToThisNode}
 
         #Don't need to read out list if depth == 0!!
@@ -350,8 +346,6 @@ class GameAlgo:
         if len(moveList) == 0:
             bottomEval = self.evalFunc_callback()
             retDict = {KEY_EVAL: bottomEval, KEY_BESTMOVE: None, KEY_HISTORY: historyToThisNode}
-            #print("-" *((self.DEPTH-depth)*1), end=' ')
-            #print(f"{historyToThisNode}> *** EVAL (Win) *** Found win: I will resturn", retDict)
             return {KEY_EVAL: bottomEval, KEY_BESTMOVE: None, KEY_HISTORY: historyToThisNode}
 
         if maximizingPlayer:
@@ -359,7 +353,6 @@ class GameAlgo:
             for move in moveList:
 
                 if self.interruptFlag:
-                    print("Interrupt minmax")
                     break
 
                 #Try a move
@@ -372,22 +365,14 @@ class GameAlgo:
 
                 del historyToThisNode[-1]
 
-                #print("-" *((self.DEPTH-depth)*1), end=' ')
-                #print(f"{historyToThisNode}X> Got eval Result", evalResult)
-
                 #Remove token before next loop
                 self.maximizerUndoMoveFunc_callback(move)
 
                 # Is this move better?
-                #print("-" * ((self.DEPTH - depth) * 1), end=' ')
-                #print(f"{historyToThisNode}X>Is {evalResult[KEY_EVAL]} > {evalMaxResult[KEY_EVAL]} (max so far)")
                 if evalResult[KEY_EVAL] > evalMaxResult[KEY_EVAL]:
                     evalMaxResult[KEY_EVAL] = evalResult[KEY_EVAL]
                     evalMaxResult[KEY_BESTMOVE] = move
                     evalMaxResult[KEY_HISTORY] = evalResult[KEY_HISTORY]
-                    #print("-" * (self.DEPTH - depth), end=' ')
-                    #print(f"{historyToThisNode}X>     YES! Updating best move to {evalMaxResult}")
-
 
                 #Is this move the best I know so far?
                 if evalMaxResult[KEY_EVAL] > alpha:
@@ -399,12 +384,8 @@ class GameAlgo:
                 # me has found a better move (beta<=alpha), he will NOT pick
                 # this branch anyway. So stop investigating further!
                 if beta <= alpha:
-                    #print("-" * (self.DEPTH - depth), end=' ')
-                    #print(f"{historyToThisNode}X> PRUNE!!")
                     break
 
-            #print("-" * (self.DEPTH - depth), end=' ')
-            #print(f"{historyToThisNode}X>Thats it! Here is what I will return! {evalMaxResult}")
             return evalMaxResult
 
         #Minimizer
@@ -434,8 +415,6 @@ class GameAlgo:
                     evalMinResult[KEY_EVAL] = evalResult[KEY_EVAL]
                     evalMinResult[KEY_BESTMOVE] = move
                     evalMinResult[KEY_HISTORY] = evalResult[KEY_HISTORY]
-                    #print("-" * (self.DEPTH - depth), end=' ')
-                    #print(f"{historyToThisNode}O>     YES! Updating best move to {evalMinResult}")
 
                 if evalMinResult[KEY_EVAL] < beta:
                     evalMinResult[KEY_EVAL] = evalResult[KEY_EVAL]
